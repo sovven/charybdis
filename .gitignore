@@ -3,3 +3,5 @@ tools/package*.json
 tools/.entry.js
 dist/gist/
 .claude/
+sfx-src/
+sfx-work/

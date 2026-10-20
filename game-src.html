@@ -506,27 +506,54 @@ let bests=[0,0,0];
 try{const b=JSON.parse(localStorage.getItem('charybdis-best')||'null'); if(Array.isArray(b)&&b.length===3) bests=b;}catch(_){}
 const saveBests=()=>{try{localStorage.setItem('charybdis-best',JSON.stringify(bests));}catch(_){}};
 
-/* ---------------- sound: all synthesised in WebAudio, no files ---------------- */
+/* ---------------- sound: real CC0 field recordings (sfx/CREDITS.md), mixed like a film storm ----------------
+   amb bus (rain, drizzle, sea, wind, vortex roar) gets ducked by close thunder; fx bus (oars, thunder, splashes);
+   both go through a master low-pass ("muffle": pause, being dragged under) and a glue compressor. */
+const SFX_DATA=/*SFX_DATA*/{};
 const SFX=(()=>{
-  let ctx=null,out=null,nb=null,bb=null,amb=null,on=true;
+  let ctx=null,master=null,muf=null,amb=null,thd=null,fx=null,beds=null,B={},on=true,calm=1,muffled=false;
   try{on=localStorage.getItem('charybdis-sound')!=='0';}catch(_){}
-  const T=()=>ctx.currentTime;
-  const gain=v=>{const g=ctx.createGain();g.gain.value=v;return g;};
-  const filt=(type,f,q)=>{const b=ctx.createBiquadFilter();b.type=type;b.frequency.value=f;if(q!=null)b.Q.value=q;return b;};
-  const env=(g,t,a,peak,d)=>{g.gain.setValueAtTime(0.0001,t);g.gain.exponentialRampToValueAtTime(peak,t+a);g.gain.exponentialRampToValueAtTime(0.0001,t+a+d);};
-  function noise(t,{type='bandpass',f=1000,f2,q=1,peak=0.3,a=0.005,d=0.3,buf}={}){
-    const s=ctx.createBufferSource();s.buffer=buf||nb;s.loop=true;
-    const fl=filt(type,f,q),g=gain(0);if(f2){fl.frequency.setValueAtTime(f,t);fl.frequency.exponentialRampToValueAtTime(f2,t+a+d);}
-    s.connect(fl);fl.connect(g);g.connect(out);env(g,t,a,peak,d);s.start(t,Math.random()*1.5);s.stop(t+a+d+0.05);
+  const T=()=>ctx.currentTime,R=(a,b)=>a+Math.random()*(b-a);
+  const OARS=['oar1','oar2','oar3','oar4','oar5','oar6','oar7','oar8','oar10','oar12'];
+  const pick=a=>a[Math.floor(Math.random()*a.length)];
+  async function load(){
+    await Promise.all(Object.entries(SFX_DATA).map(async([k,u])=>{
+      try{const bin=atob(u.slice(u.indexOf(',')+1)),ab=new Uint8Array(bin.length);for(let i=0;i<bin.length;i++)ab[i]=bin.charCodeAt(i);B[k]=await new Promise((ok,no)=>ctx.decodeAudioData(ab.buffer,ok,no));}catch(_){}
+    }));
+    startBeds();
   }
-  function tone(t,{type='sine',f=440,f2,peak=0.3,a=0.005,d=0.3,lp}={}){
-    const o=ctx.createOscillator();o.type=type;o.frequency.setValueAtTime(f,t);if(f2)o.frequency.exponentialRampToValueAtTime(f2,t+a+d);
-    const g=gain(0);let n=o;if(lp){const l=filt('lowpass',lp,0.7);o.connect(l);n=l;}
-    n.connect(g);g.connect(out);env(g,t,a,peak,d);o.start(t);o.stop(t+a+d+0.05);
+  // one-shot: buffer -> [lowpass] -> gain -> pan -> bus
+  function shot(name,{t=T(),rate=1,gain=1,pan=0,lp=0,bus=fx,off=0,dur}={}){
+    const b=B[name];if(!b)return;
+    const s=ctx.createBufferSource();s.buffer=b;s.playbackRate.value=rate;
+    let n=s;if(lp){const f=ctx.createBiquadFilter();f.type='lowpass';f.frequency.value=lp;n.connect(f);n=f;}
+    const g=ctx.createGain();g.gain.value=gain;n.connect(g);
+    let o=g;if(ctx.createStereoPanner){const p=ctx.createStereoPanner();p.pan.value=Math.max(-1,Math.min(1,pan));g.connect(p);o=p;}
+    o.connect(bus);s.start(Math.max(t,T()),off);
+    if(dur){g.gain.setValueAtTime(gain,t+Math.max(0,dur-1.2));g.gain.linearRampToValueAtTime(0,t+dur);s.stop(t+dur+0.05);}
   }
-  // a plucked lyre string, near enough
-  const pluck=(t,f,p=0.2)=>{tone(t,{type:'triangle',f,peak:p,a:0.002,d:1.1,lp:f*5});tone(t,{f:f*2,peak:p*0.35,a:0.002,d:0.45});};
-  let master=null;
+  // endless bed: overlapping copies with 2s equal-power-ish crossfades, so the seam is never heard
+  function bed(name,{rate=1,lp=0}={}){
+    const out=ctx.createGain();out.gain.value=0;let dest=out;
+    if(lp){const f=ctx.createBiquadFilter();f.type='lowpass';f.frequency.value=lp;f.connect(out);dest=f;}
+    const b=B[name];const XF=2;let next=T()+0.05;const srcs=new Set();
+    const tick=()=>{
+      if(!b)return;if(next<T())next=T()+0.05;
+      while(next<T()+3){
+        const d=b.duration/rate,s=ctx.createBufferSource(),g=ctx.createGain();s.buffer=b;s.playbackRate.value=rate;
+        s.connect(g);g.connect(dest);
+        g.gain.setValueAtTime(0,next);g.gain.linearRampToValueAtTime(1,next+XF);g.gain.setValueAtTime(1,next+d-XF);g.gain.linearRampToValueAtTime(0,next+d);
+        s.start(next);s.stop(next+d+0.05);srcs.add(s);s.onended=()=>srcs.delete(s);next+=d-XF;
+      }
+    };
+    tick();const iv=setInterval(tick,700);
+    return{out,rate:r=>srcs.forEach(s=>s.playbackRate.setTargetAtTime(r,T(),1.2)),stop:()=>clearInterval(iv)};
+  }
+  function startBeds(){
+    if(beds||!B.sea)return;
+    beds={rain:bed('rain'),drizzle:bed('drizzle'),sea:bed('sea'),wind:bed('wind'),roar:bed('wind',{rate:0.55,lp:420})};
+    for(const k in beds)beds[k].out.connect(amb);
+  }
   function init(){
     if(ctx){if(ctx.state!=='running')ctx.resume().catch(()=>{});return;}
     const AC=window.AudioContext||window.webkitAudioContext;if(!AC)return;
@@ -534,53 +561,67 @@ const SFX=(()=>{
     try{ctx=new AC();}catch(_){return;}
     try{const sb=ctx.createBufferSource();sb.buffer=ctx.createBuffer(1,1,22050);sb.connect(ctx.destination);sb.start(0);}catch(_){}
     if(ctx.state!=='running')ctx.resume().catch(()=>{});
-    master=gain(on?1:0);const comp=ctx.createDynamicsCompressor();comp.threshold.value=-16;comp.ratio.value=5;
-    out=master;master.connect(comp);comp.connect(ctx.destination);
-    const len=ctx.sampleRate*2;nb=ctx.createBuffer(1,len,ctx.sampleRate);bb=ctx.createBuffer(1,len,ctx.sampleRate);
-    const w=nb.getChannelData(0),br=bb.getChannelData(0);let last=0;
-    for(let i=0;i<len;i++){w[i]=Math.random()*2-1;last=(last+0.02*w[i])/1.02;br[i]=last*3.5;}
-    const loop=(buf,type,f,q)=>{const s=ctx.createBufferSource();s.buffer=buf;s.loop=true;const fl=filt(type,f,q),g=gain(0);s.connect(fl);fl.connect(g);g.connect(out);s.start();return{fl,g};};
-    amb={sea:loop(nb,'lowpass',500,0.5),roar:loop(bb,'lowpass',170,0.8),wind:loop(nb,'bandpass',600,2.5),rain:loop(nb,'highpass',2800,0.5)};
+    const comp=ctx.createDynamicsCompressor();comp.threshold.value=-14;comp.knee.value=8;comp.ratio.value=4;comp.attack.value=0.01;comp.release.value=0.25;
+    master=ctx.createGain();master.gain.value=on?1.4:0;
+    muf=ctx.createBiquadFilter();muf.type='lowpass';muf.frequency.value=20000;muf.Q.value=0.5;
+    amb=ctx.createGain();thd=ctx.createGain();fx=ctx.createGain();fx.gain.value=0.9;
+    amb.connect(thd);thd.connect(muf);fx.connect(muf);muf.connect(comp);comp.connect(master);master.connect(ctx.destination);
+    load();
   }
   const play=fn=>(...a)=>{if(ctx&&on&&ctx.state==='running')try{fn(...a);}catch(_){}};
+  const oar=(t,gain,pan,rate)=>shot(pick(OARS),{t,gain,pan,rate});
   return{
     init,
     get on(){return on;},
     get state(){return ctx?ctx.state:'none';},
-    setOn(v){on=v;try{localStorage.setItem('charybdis-sound',v?'1':'0');}catch(_){}if(master)master.gain.setTargetAtTime(v?1:0,T(),0.05);},
-    // ambience: open sea, the vortex roar (louder the closer you are, and while she swallows), wind, rain
-    update(p){if(!ctx||!amb||!on)return;const t=T(),near=Math.max(0,1-p.r/75);
-      amb.sea.g.gain.setTargetAtTime((0.09+0.09*p.storm)*p.duck,t,0.3);
-      amb.sea.fl.frequency.setTargetAtTime(420+300*p.storm*Math.sin(p.t*0.4)**2,t,0.3);
-      amb.roar.g.gain.setTargetAtTime((0.06+0.7*near*near)*(0.35+0.65*p.b)*Math.min(1.4,p.S)*p.duck,t,0.25);
-      amb.wind.g.gain.setTargetAtTime(0.05*p.storm*(0.6+0.4*Math.sin(p.t*0.7))*p.duck,t,0.4);
-      amb.wind.fl.frequency.setTargetAtTime(700+450*Math.sin(p.t*0.31),t,0.5);
-      amb.rain.g.gain.setTargetAtTime(p.rain?0.045*Math.min(1,p.storm)*p.duck:0,t,0.4);},
-    // one oar stroke: drum beat + wood knock + blade into water; pitch climbs with the combo
-    stroke:play(c=>{const t=T(),k=1+Math.min(c,30)*0.01;
-      tone(t,{f:120*k,f2:46,peak:0.6,a:0.003,d:0.17});
-      noise(t,{type:'highpass',f:2600,peak:0.1,d:0.03});
-      noise(t+0.05,{type:'bandpass',f:950*k,f2:380,q:0.9,peak:0.24,a:0.01,d:0.24});}),
-    bell:play(n=>{const t=T(),f=520*Math.pow(1.122,Math.min(n,6)-1);[1,2.76,5.4].forEach((m,i)=>tone(t,{f:f*m,peak:0.2/(i+1),a:0.002,d:1.5/(i+1)}));}),
-    denied:play(()=>{const t=T();tone(t,{f:85,f2:60,peak:0.35,d:0.1});noise(t,{type:'lowpass',f:320,peak:0.18,d:0.09});}),
-    exhaust:play(()=>{const t=T();tone(t,{type:'sawtooth',f:150,f2:72,peak:0.2,a:0.04,d:0.6,lp:520});tone(t+0.12,{type:'sawtooth',f:112,f2:58,peak:0.14,a:0.04,d:0.75,lp:420});}),
-    recover:play(()=>{const t=T();tone(t,{type:'triangle',f:330,f2:440,peak:0.12,a:0.02,d:0.25});}),
-    heart:play(()=>{const t=T();tone(t,{f:64,f2:44,peak:0.5,d:0.12});tone(t+0.17,{f:58,f2:42,peak:0.34,d:0.14});}),
-    splash:play(()=>{const t=T();noise(t,{type:'lowpass',f:3200,f2:240,q:0.7,peak:0.45,a:0.01,d:0.85});tone(t,{f:210,f2:60,peak:0.22,d:0.25});}),
-    rescue:play(()=>{const t=T();[293.66,369.99,440,587.33].forEach((f,i)=>pluck(t+i*0.075,f));}),
-    thunder:play(dist=>{const t=T(),near=Math.max(0,1-dist/220),dl=Math.min(1.6,dist*0.008);
-      noise(t+dl*0.25,{type:'highpass',f:700,peak:0.06+0.5*near,a:0.002,d:0.35});
-      noise(t+dl,{type:'lowpass',f:260,f2:70,q:0.5,peak:0.4+0.4*near,a:0.06,d:2.6+Math.random()*1.4,buf:bb});}),
-    horn:play(()=>{const t=T();[55,82.4,110].forEach((f,i)=>tone(t,{type:'sawtooth',f,f2:f*0.93,peak:0.13/(i*0.5+1),a:0.5,d:2.3,lp:400}));}),
-    whoosh:play(()=>{const t=T();noise(t,{type:'bandpass',f:240,f2:2400,q:1.2,peak:0.4,a:0.45,d:1.3});}),
-    gulp:play(()=>{const t=T();noise(t,{type:'lowpass',f:500,f2:60,q:0.8,peak:0.9,a:0.4,d:3.2,buf:bb});tone(t,{f:70,f2:24,peak:0.5,a:0.3,d:2.8});}),
-    start:play(()=>{const t=T();[0,0.16,0.32].forEach((d,i)=>tone(t+d,{f:i<2?100:130,f2:44,peak:0.55,d:0.2}));pluck(t+0.32,293.66,0.18);pluck(t+0.32,440,0.14);}),
-    win:play(()=>{const t=T();[293.66,369.99,440,587.33,739.99,880].forEach((f,i)=>pluck(t+i*0.11,f,0.2));[1,2.76].forEach((m,i)=>tone(t+0.7,{f:587.33*m,peak:0.16/(i+1),a:0.002,d:2}));}),
-    lose:play(()=>{const t=T();[220,207.65,174.61,146.83].forEach((f,i)=>tone(t+i*0.38,{type:'triangle',f,peak:0.18,a:0.02,d:1.3,lp:900}));}),
-    click:play(()=>{tone(T(),{type:'triangle',f:1500,f2:900,peak:0.07,d:0.05});})
+    setOn(v){on=v;try{localStorage.setItem('charybdis-sound',v?'1':'0');}catch(_){}if(master)master.gain.setTargetAtTime(v?1.4:0,T(),0.05);},
+    // storm mix: rain + drizzle and wind follow the storm, sea gets rougher near the vortex, the roar follows distance and her breathing
+    update(p){if(!ctx||!beds||!on)return;const t=T(),near=Math.max(0,1-p.r/75),st=Math.min(1,p.storm/1.2),k=calm;
+      const set=(b,v,tc=0.6)=>b.out.gain.setTargetAtTime(v,t,tc);
+      set(beds.rain,p.rain?(0.15+0.55*st)*k:0);
+      set(beds.drizzle,p.rain?(0.12+0.3*st)*k:0);
+      set(beds.sea,(0.35+0.35*st+0.25*near)*(0.6+0.4*k));
+      set(beds.wind,(0.08+0.5*st)*(0.6+0.4*Math.sin(p.t*0.23)**2)*k);
+      set(beds.roar,(0.04+1.25*near*near)*(0.3+0.7*p.b)*Math.min(1.5,p.S)*k,0.4);
+      beds.roar.rate(0.5+0.18*near*(0.4+0.6*p.b));
+      if(!muffled){muf.frequency.setTargetAtTime(p.duck<0.6?900:20000,t,0.25);amb.gain.setTargetAtTime(p.duck<0.6?0.55:p.duck,t,0.3);}},
+    // one stroke = the crew's oars hitting the water: 2-3 real strokes, spread port/starboard, a few ms apart; weight grows with the combo
+    stroke:play(c=>{const t=T(),w=Math.min(1,c/20);
+      oar(t,0.55,R(-0.6,-0.2),R(0.92,1.08));
+      oar(t+R(0.02,0.05),0.5,R(0.2,0.6),R(0.9,1.06));
+      if(c>=8)oar(t+R(0.05,0.09),0.35,R(-0.3,0.3),R(0.85,0.98));
+      if(w>0.3)shot(pick(OARS),{t,rate:0.6,lp:600,gain:0.45*w});}),
+    // every 10th stroke in a row: the whole crew heaves at once
+    bell:play(()=>{const t=T();for(let i=0;i<4;i++)oar(t+i*0.025,0.45,R(-0.8,0.8),R(0.8,0.95));shot('wave_crash',{t,rate:1.15,gain:0.25,lp:2500});}),
+    denied:play(()=>shot(pick(OARS),{rate:0.5,lp:350,gain:0.4})),
+    exhaust:play(()=>{const t=T();shot(pick(OARS),{t,rate:0.45,lp:500,gain:0.6});shot('wave_crash',{t:t+0.1,rate:0.75,lp:900,gain:0.35});}),
+    recover:()=>{},
+    heart:()=>{},
+    splash:play(()=>{const t=T(),p=R(-0.5,0.5);shot(pick(OARS),{t,rate:0.55,gain:0.9,pan:p});shot('wave_crash',{t:t+0.04,rate:1.25,gain:0.5,pan:p,off:0.3});}),
+    rescue:play(()=>{const t=T();shot(pick(OARS),{t,rate:1.15,gain:0.5,pan:-0.3});shot(pick(OARS),{t:t+0.18,rate:0.75,gain:0.55,pan:0.2,lp:1500});}),
+    // thunder: near / mid / far take, delayed by distance (speed of sound, compressed), panned to where the bolt hit; close ones duck the rain and add sub
+    thunder:play((dist,pan=0)=>{const t=T(),m=dist*6,dl=Math.min(2.6,m/343*0.5);
+      const name=m<300?pick(['thunder_near1','thunder_near2']):m<800?pick(['thunder_mid1','thunder_mid2']):pick(['thunder_far1','thunder_far2']);
+      const g=m<300?1:m<800?0.85:0.75;
+      shot(name,{t:t+dl,gain:g,pan:pan*0.8,rate:R(0.92,1.04)});
+      if(m<500){shot(name,{t:t+dl,gain:0.5,rate:0.5,lp:110});
+        thd.gain.cancelScheduledValues(t+dl);thd.gain.setTargetAtTime(0.45,t+dl,0.03);thd.gain.setTargetAtTime(1,t+dl+0.6,0.8);}}),
+    // she starts swallowing: the sea inhales (roar swell); she spits: a surge of surf
+    horn:play(()=>{const t=T();shot('wind',{t,rate:0.4,lp:260,gain:1.1,dur:5});shot('wave_crash',{t,rate:0.6,lp:700,gain:0.5});}),
+    whoosh:play(()=>{const t=T();shot('wave_crash',{t,gain:0.8,pan:-0.4});shot('wave_crash',{t:t+0.12,rate:0.9,gain:0.7,pan:0.4});}),
+    // dragged under: roar up, the world goes muffled
+    gulp:play(()=>{const t=T();muffled=true;shot('wind',{t,rate:0.35,lp:300,gain:1.4,dur:4});shot('wave_crash',{t,rate:0.5,gain:0.9});
+      muf.frequency.cancelScheduledValues(t);muf.frequency.setValueAtTime(muf.frequency.value,t);muf.frequency.exponentialRampToValueAtTime(220,t+2.6);}),
+    start:play(()=>{calm=1;shot('wave_crash',{gain:0.45,rate:0.9});}),
+    reset(){calm=1;muffled=false;if(muf)muf.frequency.setTargetAtTime(20000,T(),0.2);},
+    // made it out: the storm eases off
+    win:play(()=>{calm=0.35;shot('wave_crash',{gain:0.5,rate:0.85,lp:3000});}),
+    lose:()=>{},
+    click:()=>{}
   };
 })();
 ['pointerdown','pointerup','touchend','click','keydown'].forEach(ev=>addEventListener(ev,()=>SFX.init(),{capture:true,passive:true}));
+
 
 
 /* ---------------- parameters & shared sea model (mirrored in GLSL) ---------------- */
@@ -899,7 +940,7 @@ function applyLevelParams(){
   $('fixedNote').hidden=!!LV.free;
 }
 function setupLevel(){
-  applyLevelParams();
+  applyLevelParams();SFX.reset();
   const a=-0.6,r=LV.r0;
   ship.x=Math.cos(a)*r;ship.z=Math.sin(a)*r;ship.psi=a+Math.PI/2;ship.y=H(ship.x,ship.z,simT);ship.vx=ship.vz=0;
   ship.stamina=100;ship.power=0;ship.exhausted=false;ship.combo=0;ship.lastStroke=-9;ship.state='idle';ship.swallowT=0;ship.manual=false;shipG.visible=true;tween=null;
@@ -1184,7 +1225,7 @@ function step(dt){
     for(let k=0;k<=14;k++){const f=k/14;pts.push(new THREE.Vector3(THREE.MathUtils.lerp(x,ex,f)+(k&&k<14?(Math.random()-0.5)*9:0),THREE.MathUtils.lerp(180,ey,f),THREE.MathUtils.lerp(z,ez,f)+(k&&k<14?(Math.random()-0.5)*9:0)));}
     if(bolt){scene.remove(bolt);bolt.geometry.dispose();}
     bolt=new THREE.Mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts,false,'catmullrom',0.1),80,hit?0.5:0.7,5),boltMat);
-    scene.add(bolt);boltT=0.2;flash=1;SFX.thunder(Math.hypot(ex-ship.x,ez-ship.z));
+    scene.add(bolt);boltT=0.2;flash=1;{const tv=new THREE.Vector3(ex,ey,ez).sub(camera.position).normalize(),cr=new THREE.Vector3().setFromMatrixColumn(camera.matrixWorld,0);SFX.thunder(Math.hypot(ex-ship.x,ez-ship.z),tv.dot(cr));}
     if(hit){const ob=aboard();throwCrew(ob[Math.floor(Math.random()*ob.length)],tr('zeus'));splash(ship.x,ship.y,ship.z,80);}
   }
   if(bolt){boltT-=dt;bolt.visible=boltT>0&&Math.sin(boltT*90)>-0.6;if(boltT<=0){scene.remove(bolt);bolt.geometry.dispose();bolt=null;}}
@@ -1288,7 +1329,7 @@ function frame(){
   const dt=Math.min(clock.getDelta(),0.05);
   if(!paused)step(dt*P.speed);
   updateCamera(dt);hud();
-  SFX.update({t:simT,r:Math.hypot(ship.x,ship.z),b:M.b,S:P.S,storm:P.storm,rain:P.rain,duck:paused||game.mode==='menu'?0.45:1});
+  SFX.update({t:simT,r:Math.hypot(ship.x,ship.z),b:M.b,S:P.S,storm:P.storm,rain:P.rain,duck:paused?0.45:game.mode==='menu'?0.7:1});
   if(fovKick>0.01){fovKick*=Math.exp(-dt*7);camera.fov=fovFor()+fovKick;camera.updateProjectionMatrix();}
   radarT+=dt;if(radarT>0.066){radarT=0;drawRadar();}
   renderer.render(scene,camera);requestAnimationFrame(frame);

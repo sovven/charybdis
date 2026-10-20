@@ -12,7 +12,14 @@ const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const rd = p => fs.readFileSync(path.join(root, p), 'utf8');
 const wr = (p, s) => { fs.mkdirSync(path.dirname(path.join(root, p)), { recursive: true }); fs.writeFileSync(path.join(root, p), s); console.log('  ', p, (s.length / 1024).toFixed(0) + 'KB'); };
 
-const src = rd('game-src.html');
+// sounds: every sfx/*.mp3 (minus rejected takes) is inlined as a data: URI in place of /*SFX_DATA*/{}
+const SKIP = new Set(['oar9', 'oar11', 'oar13']); // these takes carry a second stroke
+const sfxDir = path.join(root, 'sfx');
+const sfxData = Object.fromEntries(fs.readdirSync(sfxDir).filter(f => f.endsWith('.mp3') && !SKIP.has(f.slice(0, -4)))
+  .map(f => [f.slice(0, -4), 'data:audio/mpeg;base64,' + fs.readFileSync(path.join(sfxDir, f)).toString('base64')]));
+const raw = rd('game-src.html');
+if (!raw.includes('/*SFX_DATA*/{}')) throw new Error('SFX_DATA placeholder not found');
+const src = raw.replace('/*SFX_DATA*/{}', () => JSON.stringify(sfxData));
 if (!src.includes('const MOBILE=false;')) throw new Error('MOBILE flag not found');
 const toMobile = s => s.replace('const MOBILE=false;', 'const MOBILE=true;').replace('<title>卡律布狄斯</title>', '<title>卡律布狄斯 手机版</title>');
 
