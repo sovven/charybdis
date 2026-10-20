@@ -11,7 +11,7 @@
 <title>卡律布狄斯</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Marcellus+SC&family=Noto+Serif+SC:wght@500;700;900&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Marcellus+SC&family=Noto+Serif+SC:wght@500;700;900&family=Noto+Serif+KR:wght@500;700;900&family=EB+Garamond:wght@500;700;800&display=swap">
 <style>
 /* Layout: game HUD painted straight onto the scene, no boxes. Corners carry state (quest top-left, compass bottom-right, oar control bottom-centre);
    big events speak through a centre banner; menus are a title screen and a cinematic band. Bronze on black, after Greek bronze and black-figure ware. */
@@ -228,6 +228,23 @@ input[type=checkbox]:checked{background:var(--gold);box-shadow:0 0 8px rgba(242,
 body.ui-off .hud,body.ui-off .controls,body.ui-off .pause-btn,body.ui-off #toasts{display:none}
 body.menu .hud,body.menu .controls,body.menu .pause-btn{display:none}
 
+/* ===== languages ===== */
+html[lang=en]{--f-display:"EB Garamond","Noto Serif SC",serif}
+html[lang=ko]{--f-display:"Noto Serif KR","Noto Serif SC",serif}
+html[lang=en] .b-title,html[lang=en] .banner .b-t{letter-spacing:.06em;text-indent:.06em}
+html[lang=ko] .b-title,html[lang=ko] .banner .b-t{letter-spacing:.1em;text-indent:.1em}
+html[lang=en] .breath-word,html[lang=ko] .breath-word{letter-spacing:.18em;text-indent:.18em}
+html[lang=en] .ts-title{letter-spacing:.02em}
+html[lang=en] .p-title{letter-spacing:.12em}
+html[lang=en] .row-btn .lab{letter-spacing:.14em;text-indent:.14em}
+html[lang=ko] .row-btn .lab{font-size:17px;letter-spacing:.04em;text-indent:.04em}
+.ctl .lbl{display:inline}
+.lang{display:flex;gap:20px;margin-top:16px}
+.lang button{background:none;border:0;font:500 14px/1 var(--f-display);letter-spacing:.08em;color:var(--mist);padding:6px 0;cursor:pointer;border-bottom:2px solid transparent}
+.lang button.on{color:var(--gold);border-bottom-color:var(--gold)}
+.b-new{font:400 13px/1 var(--f-latin);letter-spacing:.5em;text-indent:.5em;color:var(--foam);margin:0 0 12px;text-shadow:0 0 12px rgba(159,211,196,.6)}
+html:not([lang^=zh]) .b-new{font-family:var(--f-display);font-weight:700}
+
 /* ===== phone layout ===== */
 body.mobile{--edge:14px}
 body.mobile .hud-tl{top:calc(12px + var(--st));gap:7px}
@@ -300,17 +317,17 @@ body.mobile .cine-hint{bottom:calc(30px + var(--sb))}
     <div class="quest-bar" id="goalBarRow"><i id="goalBar"></i></div>
   </div>
   <div class="breath" id="breathRow" hidden><div class="breath-word" id="breath">吞水</div><div class="breath-sub" id="breathSub"></div><div class="breath-track"><i id="breathBar"></i></div></div>
-  <div class="hud-br"><canvas class="radar" id="radar" width="312" height="312" aria-label="海图"></canvas><div class="dist"><b id="dist">276</b>米 · 距漩涡眼</div></div>
+  <div class="hud-br"><canvas class="radar" id="radar" width="312" height="312" data-ta="radar" aria-label="海图"></canvas><div class="dist"><b id="dist">276</b><span data-t="distUnit">米 · 距漩涡眼</span></div></div>
 </div>
-<button class="pause-btn" id="panelToggle" type="button" aria-label="暂停"><span class="bars"></span><span class="lab">暂停</span><kbd>Esc</kbd></button>
+<button class="pause-btn" id="panelToggle" type="button" data-ta="pause" aria-label="暂停"><span class="bars"></span><span class="lab" data-t="pause">暂停</span><kbd>Esc</kbd></button>
 
 <div class="controls">
   <div class="steer-pair">
-    <button id="left" class="ctrl steer" type="button" aria-label="左转"><span class="glyph"></span><kbd>A</kbd></button>
+    <button id="left" class="ctrl steer" type="button" data-ta="left" aria-label="左转"><span class="glyph"></span><kbd>A</kbd></button>
   </div>
-  <button id="row" class="ctrl row-btn" type="button"><span class="ring"></span><span class="lab">划桨</span><kbd>狂按空格</kbd><div class="combo" id="combo"><b id="comboN"></b><span id="comboT"></span></div></button>
+  <button id="row" class="ctrl row-btn" type="button"><span class="ring"></span><span class="lab" data-t="row">划桨</span><kbd data-t="rowKey">狂按空格</kbd><div class="combo" id="combo"><b id="comboN"></b><span id="comboT"></span></div></button>
   <div class="steer-pair" id="rightPair">
-    <button id="right" class="ctrl steer" type="button" aria-label="右转"><span class="glyph"></span><kbd>D</kbd></button>
+    <button id="right" class="ctrl steer" type="button" data-ta="right" aria-label="右转"><span class="glyph"></span><kbd>D</kbd></button>
   </div>
 </div>
 
@@ -320,29 +337,31 @@ body.mobile .cine-hint{bottom:calc(30px + var(--sb))}
 
 <div class="screen pause-screen" id="panel" hidden>
   <div>
-    <h2 class="p-title">暂 停</h2>
+    <h2 class="p-title" data-t="pTitle">暂 停</h2>
     <div class="p-menu">
-      <button class="lv" id="resume" type="button"><span class="nm">继续航行</span><kbd>Esc</kbd></button>
-      <button class="lv" id="reset" type="button"><span class="nm">重来本关</span><kbd>R</kbd></button>
-      <button class="lv" id="toMenu" type="button"><span class="nm">返回标题</span><span></span></button>
+      <button class="lv" id="resume" type="button"><span class="nm" data-t="resume">继续航行</span><kbd>Esc</kbd></button>
+      <button class="lv" id="reset" type="button"><span class="nm" data-t="reset">重来本关</span><kbd>R</kbd></button>
+      <button class="lv" id="toMenu" type="button"><span class="nm" data-t="toMenu">返回标题</span><span></span></button>
     </div>
   </div>
   <div class="p-set">
-    <h3>海 况</h3>
-    <label class="ctl" id="c-S"><span>漩涡强度<output id="o-S">1.00</output></span><input id="S" type="range" min="0.2" max="2" step="0.01" value="1"></label>
-    <label class="ctl" id="c-row"><span>划桨力量<output id="o-row">1.00</output></span><input id="rowP" type="range" min="0.5" max="2" step="0.01" value="1"></label>
-    <label class="ctl" id="c-speed"><span>时间流速<output id="o-speed">1.00</output></span><input id="speed" type="range" min="0.25" max="2" step="0.01" value="1"></label>
-    <p class="fixed-note" id="fixedNote" hidden>漩涡强度、划桨力量和时间流速由关卡决定，自由航行里可调。</p>
-    <label class="ctl"><span>风暴<output id="o-storm">0.80</output></span><input id="storm" type="range" min="0" max="1.5" step="0.01" value="0.8"></label>
-    <div class="toggles"><label><input type="checkbox" id="rain" checked> 雨</label><label><input type="checkbox" id="lightning" checked> 雷电</label><label><input type="checkbox" id="sound" checked> 声音</label></div>
-    <h3 style="margin-top:6px">镜 头</h3>
+    <h3 data-t="seaHead">海 况</h3>
+    <label class="ctl" id="c-S"><span><span class="lbl" data-t="sS">漩涡强度</span><output id="o-S">1.00</output></span><input id="S" type="range" min="0.2" max="2" step="0.01" value="1"></label>
+    <label class="ctl" id="c-row"><span><span class="lbl" data-t="sRow">划桨力量</span><output id="o-row">1.00</output></span><input id="rowP" type="range" min="0.5" max="2" step="0.01" value="1"></label>
+    <label class="ctl" id="c-speed"><span><span class="lbl" data-t="sSpeed">时间流速</span><output id="o-speed">1.00</output></span><input id="speed" type="range" min="0.25" max="2" step="0.01" value="1"></label>
+    <p class="fixed-note" id="fixedNote" data-t="fixedNote" hidden>漩涡强度、划桨力量和时间流速由关卡决定，自由航行里可调。</p>
+    <label class="ctl"><span><span class="lbl" data-t="sStorm">风暴</span><output id="o-storm">0.80</output></span><input id="storm" type="range" min="0" max="1.5" step="0.01" value="0.8"></label>
+    <div class="toggles"><label><input type="checkbox" id="rain" checked> <span data-t="rain">雨</span></label><label><input type="checkbox" id="lightning" checked> <span data-t="lightning">雷电</span></label><label><input type="checkbox" id="sound" checked> <span data-t="sound">声音</span></label></div>
+    <h3 style="margin-top:6px" data-t="camHead">镜 头</h3>
     <div class="seg" role="group" aria-label="镜头">
-      <button type="button" data-cam="follow" class="on">跟船</button><button type="button" data-cam="pano">全景</button><button type="button" data-cam="cinema">电影</button>
+      <button type="button" data-cam="follow" class="on" data-t="follow">跟船</button><button type="button" data-cam="pano" data-t="pano">全景</button><button type="button" data-cam="cinema" data-t="cinema">电影</button>
     </div>
-    <p class="keys"><kbd>空格</kbd>连按划桨 <kbd>A</kbd><kbd>D</kbd>转向 <kbd>M</kbd>静音 <kbd>C</kbd>切镜头 <kbd>H</kbd>隐藏界面</p>
+    <p class="keys" data-th="keys"><kbd>空格</kbd>连按划桨 <kbd>A</kbd><kbd>D</kbd>转向 <kbd>M</kbd>静音 <kbd>C</kbd>切镜头 <kbd>H</kbd>隐藏界面</p>
+    <h3 style="margin-top:6px" data-t="langHead">语 言</h3>
+    <div class="lang" role="group" aria-label="Language"><button type="button" data-lang="zh">中文</button><button type="button" data-lang="en">English</button><button type="button" data-lang="ko">한국어</button></div>
   </div>
 </div>
-<div class="cine-hint" id="cineHint" hidden>电影模式 · 点一下画面退出</div>
+<div class="cine-hint" id="cineHint" data-t="cineHint" hidden>电影模式 · 点一下画面退出</div>
 
 <script type="importmap">
 {"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"}}
@@ -354,22 +373,137 @@ import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 const MOBILE=false;
 document.body.classList.toggle('mobile',MOBILE);
 
+/* ---------------- language: 中文 / English / 한국어 ---------------- */
+const I18N={
+zh:{stBest:'最佳',newBest:'新 纪 录',title:'卡律布狄斯',mobile:'手机版',
+  breathIn:'吞水',breathOut:'吐水',steady:'稳住',rush:'快冲',distUnit:'米 · 距漩涡眼',radar:'海图',
+  pause:'暂停',pTitle:'暂 停',resume:'继续航行',reset:'重来本关',toMenu:'返回标题',
+  seaHead:'海 况',sS:'漩涡强度',sRow:'划桨力量',sSpeed:'时间流速',fixedNote:'漩涡强度、划桨力量和时间流速由关卡决定，自由航行里可调。',
+  sStorm:'风暴',rain:'雨',lightning:'雷电',sound:'声音',camHead:'镜 头',follow:'跟船',pano:'全景',cinema:'电影',langHead:'语 言',
+  keys:'<kbd>空格</kbd>连按划桨 <kbd>A</kbd><kbd>D</kbd>转向 <kbd>M</kbd>静音 <kbd>C</kbd>切镜头 <kbd>H</kbd>隐藏界面',
+  cineHint:'电影模式 · 点一下画面退出',row:'划桨',rowKey:'狂按空格',left:'左转',right:'右转',
+  'l1.name':'漩涡边缘','l1.brief':'船刚驶进墨西拿海峡，卡律布狄斯的外圈已经开始拽着船走。','l1.goal':'划到外圈的火把浮标之外',
+  'l1.tip':'狂按空格，点一下划一桨，船头会自动朝外。按钮外圈是体力：每一桨都要花力气，点太猛会力竭，船员要喘口气才能再划。一秒五下左右最稳，连击越高一桨越有劲。',
+  'l1.tipM':'用手指狂点右下角的「划桨」，点一下划一桨，船头会自动朝外。按钮外圈是体力：每一桨都要花力气，点太猛会力竭，船员要喘口气才能再划。一秒五下左右最稳，连击越高一桨越有劲。',
+  'l2.name':'落水的兄弟','l2.brief':'一个浪头打过来，四名船员掉进了海里，正被冲向漩涡中心。','l2.goal':'救起至少 3 名落水船员',
+  'l2.tip':'按住 A / D 转向，狂按空格划桨，靠近头顶有金色圆环的人就能把他拉上船。罗盘上闪烁的金点就是他们。船员越少，划得越慢。',
+  'l2.tipM':'左手按住左下角的键转向，右手狂点划桨，靠近头顶有金色圆环的人就能把他拉上船。罗盘上闪烁的金点就是他们。船员越少，划得越慢。',
+  'l3.name':'三吞三吐','l3.brief':'你离漩涡太近了。卡律布狄斯会轮流吞水和吐水，而她马上就要吞了。','l3.goal':'冲出火把浮标，船上至少剩 {n} 人',
+  'l3.tip':'她吞水时海面往下塌，拉力比前两关大得多：匀着节奏点，千万别在这时候力竭；她吐水时海水往外推，把体力全砸进去狂点冲出去。被甩下船的人要回头捞，少于 {n} 人就输了。',
+  'free.name':'自由航行','free.goal':'不计分。暂停后可以调漩涡强度、风暴和时间流速','free.desc':'不计分，随意调节漩涡和风暴',
+  defTip:'狂按空格划桨，按住 A / D 转向。按 Esc 暂停，可以调漩涡强度和风暴。',defTipM:'右下角狂点划桨，左下角按住转向。右上角暂停后可以调漩涡强度和风暴。',
+  lvlTag:'第 <b>{no}</b> 关 · {name}',kicker:'第 {no} 关',locked:'通过上一关解锁',
+  eyebrow:'荷马《奥德赛》 · 第十二卷',quote:'崖下的卡律布狄斯一日三次吞下黑水，又三次吐出。喀耳刻说：她吞水的时候，别在那里。',
+  hint:'拖动画面转动视角 · 滚轮缩放',hintM:'单指拖动画面可以转动视角',enter:'回车',go:'起航',back:'返回',
+  freeWinT:'逃出生天',freeWinX:'你们划出了漩涡，还剩 {n} 名船员。',again:'再来一次',toTitle:'返回标题',
+  clear:'通 关',allClear:'全 部 通 关',finale:'你从卡律布狄斯嘴边把整条船抢了回来。荷马笔下的奥德修斯没这么幸运：他的船员一个也没能回到伊萨卡。',
+  stAboard:'船上船员',stTime:'用时',stRescued:'救起',stLasted:'坚持',star3:'三星条件：12 名船员全部在船上。',
+  next:'下一关',replay:'重玩本关',retry:'再试一次',
+  thrown:'{n} 被甩出船舷，快去救他',rescued:'救起了 {n}',closed:'漩涡合拢了',
+  lateT:'来不及了',lateX:'落水的兄弟被卡律布狄斯吞了下去，剩下的人不够你完成这次营救。',
+  fewT:'人手不够了',fewX:'船上只剩 {n} 人，划不动这条船了。',
+  shipT:'船没了',shipX:'卡律布狄斯把整条黑船吸进了海底。奥德修斯纵身扑向崖上那棵无花果树，像蝙蝠一样倒挂在枝头，等了整整一天，直到漩涡把龙骨和桅杆吐回海面。',
+  drowned:'{n} 被漩涡吞没了',zeus:'宙斯的雷霆劈中了船，{n} 落水',
+  spent:'力竭',breathe:'喘口气',combo:'连划',full:'全力',
+  swIn:'她在吞水',swOut:'她在吐水',swInSub:'匀着点，别把体力耗光',swOutSub:'海水往外推，狂点冲出去',
+  goalEsc:'冲到 {m} 米外',goalMin:'，至少 {n} 人',goalRescue:'救起落水船员 {a} / {b}',goalFree:'在漩涡里自由航行',
+  spentToast:'船员力竭了，喘口气才能再划',soundOn:'声音已打开',soundOff:'已静音',
+  names:['欧律洛科斯','波利忒斯','佩里墨得斯','安提福斯','欧律达马斯','吕科斯','墨冬','阿尔基摩斯','克洛尼俄斯','斐勒蒙','忒拉蒙','狄翁']},
+en:{stBest:'Best',newBest:'NEW RECORD',title:'Charybdis',mobile:'Mobile',
+  breathIn:'SWALLOW',breathOut:'SPOUT',steady:'HOLD ON',rush:'GO',distUnit:'m · to the eye',radar:'Chart',
+  pause:'PAUSE',pTitle:'PAUSED',resume:'Resume',reset:'Restart Level',toMenu:'Title Screen',
+  seaHead:'SEA',sS:'Whirlpool',sRow:'Oar Power',sSpeed:'Time Scale',fixedNote:'Whirlpool, oar power and time scale are set by the level. You can change them in Free Voyage.',
+  sStorm:'Storm',rain:'Rain',lightning:'Lightning',sound:'Sound',camHead:'CAMERA',follow:'Follow',pano:'Overview',cinema:'Cinematic',langHead:'LANGUAGE',
+  keys:'<kbd>Space</kbd> tap to row <kbd>A</kbd><kbd>D</kbd> steer <kbd>M</kbd> mute <kbd>C</kbd> camera <kbd>H</kbd> hide HUD',
+  cineHint:'Cinematic · tap to exit',row:'ROW',rowKey:'MASH SPACE',left:'Turn left',right:'Turn right',
+  'l1.name':'The Whirlpool’s Edge','l1.brief':'Your ship has just entered the Strait of Messina, and the outer ring of Charybdis is already dragging it in.','l1.goal':'Row out past the ring of torch buoys',
+  'l1.tip':'Mash Space: every press is one oar stroke, and the bow turns outward on its own. The ring around the button is stamina. Each stroke costs some, and if you push too hard the crew is spent and has to catch its breath. About five taps a second is the sweet spot, and longer combos make every stroke stronger.',
+  'l1.tipM':'Tap ROW in the bottom right as fast as you can: every tap is one oar stroke, and the bow turns outward on its own. The ring around the button is stamina. Each stroke costs some, and if you push too hard the crew is spent and has to catch its breath. About five taps a second is the sweet spot, and longer combos make every stroke stronger.',
+  'l2.name':'Men Overboard','l2.brief':'A wave broke over the deck and four of your crew went into the sea. The current is carrying them toward the centre.','l2.goal':'Pull at least 3 of them back aboard',
+  'l2.tip':'Hold A / D to steer and mash Space to row. Get close to anyone with a gold ring overhead to haul them aboard. They are the blinking gold dots on the compass. Fewer rowers means a slower ship.',
+  'l2.tipM':'Hold the bottom-left buttons to steer and tap ROW fast with your right hand. Get close to anyone with a gold ring overhead to haul them aboard. They are the blinking gold dots on the compass. Fewer rowers means a slower ship.',
+  'l3.name':'Three Times She Swallows','l3.brief':'You are far too close. Charybdis swallows the sea and spits it out again in turns, and she is about to swallow.','l3.goal':'Break past the torch buoys with at least {n} crew aboard',
+  'l3.tip':'When she swallows, the sea caves in and pulls far harder than before: keep a steady rhythm and never run out of stamina then. When she spits, the sea pushes outward, so pour everything in and mash. Anyone thrown overboard has to be picked up. Fall below {n} and the voyage is over.',
+  'free.name':'Free Voyage','free.goal':'No score. Pause to adjust the whirlpool, the storm and time scale.','free.desc':'No score. Tune the whirlpool and storm freely.',
+  defTip:'Mash Space to row and hold A / D to steer. Press Esc to pause and adjust the whirlpool and storm.',defTipM:'Tap ROW fast in the bottom right and hold the bottom-left buttons to steer. Pause in the top right to adjust the whirlpool and storm.',
+  lvlTag:'LEVEL <b>{no}</b> · {name}',kicker:'LEVEL {no}',locked:'Clear the previous level to unlock',
+  eyebrow:'Homer, The Odyssey · Book XII',quote:'Under the cliff, Charybdis gulps down the black water three times a day and three times spews it up. Circe warned: do not be there when she swallows.',
+  hint:'Drag to orbit · scroll to zoom',hintM:'Drag with one finger to turn the camera',enter:'Enter',go:'Set Sail',back:'Back',
+  freeWinT:'Escaped',freeWinX:'You rowed clear of the whirlpool with {n} crew left.',again:'Go Again',toTitle:'Title Screen',
+  clear:'CLEARED',allClear:'VOYAGE COMPLETE',finale:'You snatched the whole ship back from the jaws of Charybdis. Homer’s Odysseus was not so lucky: not one of his crew made it home to Ithaca.',
+  stAboard:'Crew aboard',stTime:'Time',stRescued:'Rescued',stLasted:'Survived',star3:'Three stars: all 12 crew aboard.',
+  next:'Next Level',replay:'Replay',retry:'Try Again',
+  thrown:'{n} was flung overboard. Go back!',rescued:'Pulled {n} aboard',closed:'The whirlpool closes',
+  lateT:'Too Late',lateX:'Charybdis dragged your men under. There are not enough left to finish the rescue.',
+  fewT:'Not Enough Hands',fewX:'Only {n} left aboard, too few to row this ship.',
+  shipT:'The Ship Is Lost',shipX:'Charybdis pulled the black ship down to the seabed. Odysseus leapt for the fig tree on the cliff and hung from its branch like a bat for a whole day, until the whirlpool spat the keel and mast back up.',
+  drowned:'{n} was swallowed by the whirlpool',zeus:'Zeus’s thunderbolt struck the ship. {n} is overboard',
+  spent:'SPENT',breathe:'catch breath',combo:'STROKES',full:'FULL POWER',
+  swIn:'She Swallows',swOut:'She Spits',swInSub:'Steady, don’t burn out',swOutSub:'The sea pushes out. Mash!',
+  goalEsc:'Reach {m} m out',goalMin:', {n}+ crew',goalRescue:'Rescued {a} / {b}',goalFree:'Sail the whirlpool freely',
+  spentToast:'The crew is spent. Let them catch their breath',soundOn:'Sound on',soundOff:'Muted',
+  names:['Eurylochus','Polites','Perimedes','Antiphus','Eurydamas','Lycus','Medon','Alcimus','Clonius','Philemon','Telamon','Dion']},
+ko:{stBest:'최고 기록',newBest:'신 기 록',title:'카리브디스',mobile:'모바일',
+  breathIn:'삼킨다',breathOut:'토한다',steady:'버텨',rush:'돌파',distUnit:'m · 소용돌이 눈까지',radar:'해도',
+  pause:'일시정지',pTitle:'일시정지',resume:'계속 항해',reset:'다시 시작',toMenu:'타이틀로',
+  seaHead:'바 다',sS:'소용돌이 세기',sRow:'노 젓는 힘',sSpeed:'시간 속도',fixedNote:'소용돌이 세기, 노 젓는 힘, 시간 속도는 스테이지마다 정해져 있습니다. 자유 항해에서 바꿀 수 있습니다.',
+  sStorm:'폭풍',rain:'비',lightning:'번개',sound:'소리',camHead:'카 메 라',follow:'추적',pano:'전경',cinema:'시네마',langHead:'언 어',
+  keys:'<kbd>Space</kbd> 연타로 노 젓기 <kbd>A</kbd><kbd>D</kbd> 방향 <kbd>M</kbd> 음소거 <kbd>C</kbd> 카메라 <kbd>H</kbd> UI 숨기기',
+  cineHint:'시네마 모드 · 화면을 탭하면 종료',row:'노젓기',rowKey:'스페이스 연타',left:'왼쪽으로',right:'오른쪽으로',
+  'l1.name':'소용돌이의 가장자리','l1.brief':'배가 막 메시나 해협에 들어섰는데, 카리브디스의 바깥 물살이 벌써 배를 끌어당기고 있다.','l1.goal':'바깥쪽 횃불 부표 너머로 노를 저어 나가라',
+  'l1.tip':'스페이스를 연타하세요. 한 번 누를 때마다 노를 한 번 젓고, 뱃머리는 저절로 바깥을 향합니다. 버튼 둘레의 링이 체력입니다. 노를 저을 때마다 체력이 들고, 너무 몰아붙이면 선원들이 지쳐 숨을 돌려야 합니다. 1초에 다섯 번 정도가 가장 좋고, 연타가 길어질수록 한 번 젓는 힘이 세집니다.',
+  'l1.tipM':'오른쪽 아래 「노젓기」 버튼을 손가락으로 연타하세요. 한 번 탭할 때마다 노를 한 번 젓고, 뱃머리는 저절로 바깥을 향합니다. 버튼 둘레의 링이 체력입니다. 노를 저을 때마다 체력이 들고, 너무 몰아붙이면 선원들이 지쳐 숨을 돌려야 합니다. 1초에 다섯 번 정도가 가장 좋고, 연타가 길어질수록 한 번 젓는 힘이 세집니다.',
+  'l2.name':'바다에 빠진 형제들','l2.brief':'파도가 갑판을 덮치며 선원 넷이 바다에 빠졌다. 물살이 그들을 소용돌이 한가운데로 끌고 간다.','l2.goal':'바다에 빠진 선원을 3명 이상 구하라',
+  'l2.tip':'A / D를 눌러 방향을 잡고 스페이스를 연타해 노를 저으세요. 머리 위에 금빛 고리가 있는 사람에게 다가가면 배 위로 끌어올립니다. 나침반에서 깜빡이는 금색 점이 그들입니다. 선원이 줄면 배도 느려집니다.',
+  'l2.tipM':'왼손으로 왼쪽 아래 버튼을 눌러 방향을 잡고, 오른손으로 노젓기를 연타하세요. 머리 위에 금빛 고리가 있는 사람에게 다가가면 배 위로 끌어올립니다. 나침반에서 깜빡이는 금색 점이 그들입니다. 선원이 줄면 배도 느려집니다.',
+  'l3.name':'세 번 삼키고 세 번 토하다','l3.brief':'소용돌이에 너무 가까이 왔다. 카리브디스는 바닷물을 삼켰다 토해내기를 되풀이하는데, 이제 막 삼키려 한다.','l3.goal':'선원 {n}명 이상을 태운 채 횃불 부표 밖으로 탈출하라',
+  'l3.tip':'그녀가 삼킬 때는 해수면이 꺼지며 앞 스테이지보다 훨씬 세게 끌어당깁니다. 일정한 리듬을 지키고, 이때만큼은 절대 지치면 안 됩니다. 토해낼 때는 바닷물이 바깥으로 밀어주니 남은 체력을 모두 쏟아 연타하세요. 배 밖으로 떨어진 선원은 돌아가서 건져야 하고, {n}명 아래로 줄면 실패입니다.',
+  'free.name':'자유 항해','free.goal':'점수 없음. 일시정지 메뉴에서 소용돌이, 폭풍, 시간 속도를 조절할 수 있습니다.','free.desc':'점수 없이 소용돌이와 폭풍을 마음대로',
+  defTip:'스페이스 연타로 노를 젓고 A / D로 방향을 잡으세요. Esc로 일시정지하면 소용돌이와 폭풍을 조절할 수 있습니다.',defTipM:'오른쪽 아래 노젓기를 연타하고 왼쪽 아래 버튼으로 방향을 잡으세요. 오른쪽 위 일시정지에서 소용돌이와 폭풍을 조절할 수 있습니다.',
+  lvlTag:'스테이지 <b>{no}</b> · {name}',kicker:'스테이지 {no}',locked:'이전 스테이지를 클리어하면 열립니다',
+  eyebrow:'호메로스 『오디세이아』 · 제12권',quote:'절벽 아래 카리브디스는 하루 세 번 검은 물을 삼키고 세 번 토해낸다. 키르케가 말했다. 그녀가 삼킬 때 그곳에 있지 말라.',
+  hint:'드래그로 시점 회전 · 휠로 확대/축소',hintM:'한 손가락으로 끌어 시점을 돌릴 수 있습니다',enter:'Enter',go:'출항',back:'뒤로',
+  freeWinT:'탈출 성공',freeWinX:'소용돌이를 빠져나왔다. 남은 선원은 {n}명.',again:'다시 하기',toTitle:'타이틀로',
+  clear:'클 리 어',allClear:'항 해 완 료',finale:'카리브디스의 아가리에서 배 전체를 되찾았다. 호메로스의 오디세우스는 그만큼 운이 좋지 않았다. 그의 선원은 단 한 명도 이타카로 돌아가지 못했다.',
+  stAboard:'승선 선원',stTime:'시간',stRescued:'구조',stLasted:'버틴 시간',star3:'별 3개 조건: 선원 12명 모두 승선.',
+  next:'다음 스테이지',replay:'다시 플레이',retry:'다시 도전',
+  thrown:'{n} 배 밖으로 추락! 구하러 가자',rescued:'{n} 구조',closed:'소용돌이가 닫혔다',
+  lateT:'너무 늦었다',lateX:'바다에 빠진 형제들이 카리브디스에게 삼켜졌다. 남은 인원으로는 구조를 마칠 수 없다.',
+  fewT:'일손이 모자란다',fewX:'배에 {n}명밖에 남지 않아 더는 노를 저을 수 없다.',
+  shipT:'배를 잃었다',shipX:'카리브디스가 검은 배를 바다 밑으로 삼켜 버렸다. 오디세우스는 절벽 위 무화과나무로 뛰어올라 박쥐처럼 가지에 매달린 채 꼬박 하루를 기다렸고, 마침내 소용돌이가 용골과 돛대를 다시 토해냈다.',
+  drowned:'{n}, 소용돌이에 삼켜지다',zeus:'제우스의 벼락이 배를 강타! {n} 추락',
+  spent:'탈진',breathe:'숨 고르기',combo:'연타',full:'전력',
+  swIn:'그녀가 삼킨다',swOut:'그녀가 토한다',swInSub:'페이스 조절, 체력을 아껴라',swOutSub:'바닷물이 밀어준다, 연타!',
+  goalEsc:'{m}m 밖으로',goalMin:', 선원 {n}명 이상',goalRescue:'구조 {a} / {b}',goalFree:'소용돌이 자유 항해',
+  spentToast:'선원들이 지쳤다. 숨을 돌려야 다시 저을 수 있다',soundOn:'소리 켜짐',soundOff:'음소거',
+  names:['에우릴로코스','폴리테스','페리메데스','안티포스','에우리다마스','리코스','메돈','알키모스','클로니오스','필레몬','텔라몬','디온']}
+};
+const LANGS=[['zh','中文'],['en','English'],['ko','한국어']];
+let LANG=(()=>{try{const q=new URLSearchParams(location.search).get('lang');if(I18N[q])return q;const s=localStorage.getItem('charybdis-lang');if(I18N[s])return s;}catch(_){}
+  const n=(navigator.language||'zh').toLowerCase();return n.startsWith('ko')?'ko':n.startsWith('zh')?'zh':n.startsWith('en')?'en':'zh';})();
+const tr=(k,v)=>{let s=I18N[LANG][k];if(s==null)s=I18N.zh[k];if(s==null)return '';if(v&&typeof s==='string')s=s.replace(/\{(\w+)\}/g,(_,x)=>v[x]??'');return s;};
+const langPicker=()=>`<div class="lang" role="group" aria-label="Language">${LANGS.map(([k,n])=>`<button type="button" data-lang="${k}" class="${k===LANG?'on':''}">${n}</button>`).join('')}</div>`;
+function applyLang(){
+  document.documentElement.lang=LANG==='zh'?'zh-CN':LANG;
+  document.title=tr('title')+(MOBILE?' '+tr('mobile'):'');
+  document.querySelectorAll('[data-t]').forEach(el=>{el.textContent=tr(el.dataset.t);});
+  document.querySelectorAll('[data-th]').forEach(el=>{el.innerHTML=tr(el.dataset.th);});
+  document.querySelectorAll('[data-ta]').forEach(el=>{el.setAttribute('aria-label',tr(el.dataset.ta));});
+  document.querySelectorAll('[data-lang]').forEach(b=>b.classList.toggle('on',b.dataset.lang===LANG));
+}
+
 /* ---------------- levels ---------------- */
 const LEVELS=[
-  {no:'Ⅰ',name:'漩涡边缘',S:0.7,storm:0.5,r0:50,crew:12,type:'escape',escape:78,
-   brief:'船刚驶进墨西拿海峡，卡律布狄斯的外圈已经开始拽着船走。',
-   goal:'划到外圈的火把浮标之外',
-   tip:(MOBILE?'用手指狂点右下角的「划桨」':'狂按空格')+'，点一下划一桨，船头会自动朝外。按钮外圈是体力：每一桨都要花力气，点太猛会力竭，船员要喘口气才能再划。一秒五下左右最稳，连击越高一桨越有劲。'},
-  {no:'Ⅱ',name:'落水的兄弟',S:1.0,storm:0.8,r0:44,crew:8,type:'rescue',swimmers:4,need:3,
-   brief:'一个浪头打过来，四名船员掉进了海里，正被冲向漩涡中心。',
-   goal:'救起至少 3 名落水船员',
-   tip:(MOBILE?'左手按住左下角的键转向，右手狂点划桨':'按住 A / D 转向，狂按空格划桨')+'，靠近头顶有金色圆环的人就能把他拉上船。罗盘上闪烁的金点就是他们。船员越少，划得越慢。'},
-  {no:'Ⅲ',name:'三吞三吐',S:1.1,storm:1.1,r0:34,crew:12,type:'escape',escape:72,minCrew:5,breath:true,
-   brief:'你离漩涡太近了。卡律布狄斯会轮流吞水和吐水。',
-   goal:'冲出火把浮标，船上至少剩 5 人',
-   tip:'她吞水时海面往下塌，匀着节奏点，留住体力别力竭；她吐水时海水往外推，这时候把体力全砸进去狂点冲出去。'}
+  {id:'l1',no:'Ⅰ',S:0.7,storm:0.5,r0:50,crew:12,type:'escape',escape:78},
+  {id:'l2',no:'Ⅱ',S:1.0,storm:0.8,r0:44,crew:8,type:'rescue',swimmers:4,need:3},
+  // III: storm and whirlpool at max, oars at 2x, swallow pull 3.4 (others 2.2), starts 1.5s before she swallows.
+  // bot sim: a steady ~5 taps/s wins ~95%; nonstop mashing or a lazy 4/s wins about one run in three.
+  {id:'l3',no:'Ⅲ',S:2,storm:1.5,row:2,pull:3.4,ph0:20,r0:30,crew:12,type:'escape',escape:72,minCrew:8,breath:true}
 ];
-const FREE={no:'∞',name:'自由航行',free:true,r0:46,crew:12,type:'free',escape:105,goal:'不计分。暂停后可以调漩涡强度、风暴和时间流速'};
+const FREE={id:'free',no:'∞',free:true,r0:46,crew:12,type:'free',escape:105};
+// level text lives in I18N as '<id>.<field>', with '<id>.<field>M' for a phone-only wording
+for(const l of [...LEVELS,FREE])for(const k of ['name','brief','goal','tip'])
+  Object.defineProperty(l,k,{get(){return (MOBILE&&tr(l.id+'.'+k+'M'))||tr(l.id+'.'+k,{n:l.minCrew});}});
 let LV=LEVELS[0], LVi=0;
 const game={mode:'menu',t:0,rescued:0,t0:0,lastSw:null};
 let wake=null;
@@ -378,6 +512,9 @@ const buzz=ms=>{try{if(MOBILE&&navigator.vibrate)navigator.vibrate(ms);}catch(_)
 let stars=[0,0,0];
 try{const s=JSON.parse(localStorage.getItem('charybdis-stars')||'null'); if(Array.isArray(s)&&s.length===3) stars=s;}catch(_){}
 const saveStars=()=>{try{localStorage.setItem('charybdis-stars',JSON.stringify(stars));}catch(_){}};
+let bests=[0,0,0];
+try{const b=JSON.parse(localStorage.getItem('charybdis-best')||'null'); if(Array.isArray(b)&&b.length===3) bests=b;}catch(_){}
+const saveBests=()=>{try{localStorage.setItem('charybdis-best',JSON.stringify(bests));}catch(_){}};
 
 /* ---------------- sound: all synthesised in WebAudio, no files ---------------- */
 const SFX=(()=>{
@@ -401,9 +538,12 @@ const SFX=(()=>{
   const pluck=(t,f,p=0.2)=>{tone(t,{type:'triangle',f,peak:p,a:0.002,d:1.1,lp:f*5});tone(t,{f:f*2,peak:p*0.35,a:0.002,d:0.45});};
   let master=null;
   function init(){
-    if(ctx){if(ctx.state==='suspended')ctx.resume();return;}
+    if(ctx){if(ctx.state!=='running')ctx.resume().catch(()=>{});return;}
     const AC=window.AudioContext||window.webkitAudioContext;if(!AC)return;
+    try{if(navigator.audioSession)navigator.audioSession.type='playback';}catch(_){}
     try{ctx=new AC();}catch(_){return;}
+    try{const sb=ctx.createBufferSource();sb.buffer=ctx.createBuffer(1,1,22050);sb.connect(ctx.destination);sb.start(0);}catch(_){}
+    if(ctx.state!=='running')ctx.resume().catch(()=>{});
     master=gain(on?1:0);const comp=ctx.createDynamicsCompressor();comp.threshold.value=-16;comp.ratio.value=5;
     out=master;master.connect(comp);comp.connect(ctx.destination);
     const len=ctx.sampleRate*2;nb=ctx.createBuffer(1,len,ctx.sampleRate);bb=ctx.createBuffer(1,len,ctx.sampleRate);
@@ -416,6 +556,7 @@ const SFX=(()=>{
   return{
     init,
     get on(){return on;},
+    get state(){return ctx?ctx.state:'none';},
     setOn(v){on=v;try{localStorage.setItem('charybdis-sound',v?'1':'0');}catch(_){}if(master)master.gain.setTargetAtTime(v?1:0,T(),0.05);},
     // ambience: open sea, the vortex roar (louder the closer you are, and while she swallows), wind, rain
     update(p){if(!ctx||!amb||!on)return;const t=T(),near=Math.max(0,1-p.r/75);
@@ -449,8 +590,7 @@ const SFX=(()=>{
     click:play(()=>{tone(T(),{type:'triangle',f:1500,f2:900,peak:0.07,d:0.05});})
   };
 })();
-addEventListener('pointerdown',()=>SFX.init(),{capture:true});
-addEventListener('keydown',()=>SFX.init(),{capture:true});
+['pointerdown','pointerup','touchend','click','keydown'].forEach(ev=>addEventListener(ev,()=>SFX.init(),{capture:true,passive:true}));
 
 
 /* ---------------- parameters & shared sea model (mirrored in GLSL) ---------------- */
@@ -677,7 +817,6 @@ const oars=[];
     const blade=new THREE.Mesh(new THREE.BoxGeometry(0.03,0.22,0.5),mat);blade.position.z=side*2.35;
     piv.add(shaft,blade);piv.userData={side,off:i*0.15,slot:i};shipG.add(piv);oars.push(piv);}})();
 
-const NAMES=['欧律洛科斯','波利忒斯','佩里墨得斯','安提福斯','欧律达马斯','吕科斯','墨冬','阿尔基摩斯','克洛尼俄斯','斐勒蒙','忒拉蒙','狄翁'];
 const skin=std(0xb5835a),tunics=[0xb9a888,0x6e5a40,0x8b3a22,0x50606a,0xcbbf9f,0x7a6a52];
 function makeSailor(color){const g=new THREE.Group();
   const body=new THREE.Mesh(new THREE.CylinderGeometry(0.1,0.13,0.44,8),std(color));body.position.y=0.22;
@@ -685,7 +824,7 @@ function makeSailor(color){const g=new THREE.Group();
 const crew=[];
 [-1.25,-0.7,-0.15,0.4,0.95,1.4].forEach((x,i)=>[0.3,-0.3].forEach((z,j)=>{
   const k=i*2+j,m=makeSailor(tunics[k%tunics.length]);m.position.set(x,0.75,z);m.rotation.y=Math.PI/2;
-  shipG.add(m);crew.push({mesh:m,name:NAMES[k],home:m.position.clone(),state:'aboard'});}));
+  shipG.add(m);crew.push({mesh:m,get name(){return tr('names')[k];},home:m.position.clone(),state:'aboard'});}));
 const odysseus=new THREE.Group();
 (function(){
   const body=new THREE.Mesh(new THREE.CylinderGeometry(0.11,0.15,0.5,8),std(0x8e2416));body.position.y=0.25;
@@ -763,7 +902,7 @@ function removeSwimmer(s){scene.remove(s.mesh);if(s.ring)scene.remove(s.ring);sw
 
 /* ---------------- level flow ---------------- */
 function applyLevelParams(){
-  if(!LV.free){P.S=LV.S;P.storm=LV.storm;P.row=1;P.speed=1;}
+  if(!LV.free){P.S=LV.S;P.storm=LV.storm;P.row=LV.row||1;P.speed=1;}
   [['S','S'],['storm','storm'],['rowP','row'],['speed','speed']].forEach(([id,k])=>{$(id).value=P[k];$('o-'+(id==='rowP'?'row':id)).textContent=P[k].toFixed(2);});
   ['S','rowP','speed'].forEach(id=>{$(id).disabled=!LV.free;});
   ['c-S','c-row','c-speed'].forEach(id=>$(id).classList.toggle('off',!LV.free));
@@ -774,7 +913,7 @@ function setupLevel(){
   const a=-0.6,r=LV.r0;
   ship.x=Math.cos(a)*r;ship.z=Math.sin(a)*r;ship.psi=a+Math.PI/2;ship.y=H(ship.x,ship.z,simT);ship.vx=ship.vz=0;
   ship.stamina=100;ship.power=0;ship.exhausted=false;ship.combo=0;ship.lastStroke=-9;ship.state='idle';ship.swallowT=0;ship.manual=false;shipG.visible=true;tween=null;
-  game.rescued=0;game.t=0;game.t0=simT-13;game.lastSw=null;
+  game.rescued=0;game.t=0;game.t0=simT-(LV.ph0??13);game.lastSw=null;
   [...swimmers].forEach(removeSwimmer);
   crew.forEach(boardCrew);
   shipG.add(odysseus);odysseus.position.copy(ODY_HOME);odysseus.rotation.set(0,Math.PI/2,0);odysseus.userData.arms.forEach(a=>a.rotation.set(0,0,0));
@@ -786,7 +925,7 @@ function setupLevel(){
   buoys.children.forEach(b=>b.userData.r=LV.escape);
   $('breathRow').hidden=!LV.breath;
   $('goalBarRow').hidden=LV.type==='free';
-  $('lvlTag').innerHTML=LV.free?'<b>自由航行</b>':`第 <b>${LV.no}</b> 关 · ${LV.name}`;
+  $('lvlTag').innerHTML=LV.free?'<b>'+LV.name+'</b>':tr('lvlTag',{no:LV.no,name:LV.name});
   $('toasts').innerHTML='';$('bannerHost').innerHTML='';
   shipPos.set(ship.x,ship.y,ship.z);shipG.position.copy(shipPos);
   setCam('follow',true);
@@ -812,17 +951,17 @@ function showMenu(){
   LV=LEVELS[0];LVi=0;setupLevel();camMode='menu';tween=null;controls.enabled=false;
   const rows=LEVELS.map((l,i)=>{const locked=i>0&&!stars[i-1];
     return `<button class="lv" data-act="level" data-i="${i}" ${locked?'disabled':''} ${i===0?'data-focus':''}>
-      <span class="no">${l.no}</span><span><span class="nm">${l.name}</span><span class="ds">${locked?'通过上一关解锁':l.goal}</span></span>
+      <span class="no">${l.no}</span><span><span class="nm">${l.name}</span><span class="ds">${locked?tr('locked'):l.goal}</span></span>
       <span class="st">${stars[i]?starStr(stars[i]):''}</span></button>`;}).join('');
   openScreen('title-screen',`<div class="ts-col">
-    <div class="ts-eyebrow">荷马《奥德赛》 · 第十二卷</div>
-    <h1 class="ts-title">卡律布狄斯</h1>
+    <div class="ts-eyebrow">${tr('eyebrow')}</div>
+    <h1 class="ts-title">${tr('title')}</h1>
     <div class="ts-greek">ΧΑΡΥΒΔΙΣ</div>
-    <p class="ts-quote">崖下的卡律布狄斯一日三次吞下黑水，又三次吐出。喀耳刻说：她吞水的时候，别在那里。</p>
+    <p class="ts-quote">${tr('quote')}</p>
     <nav class="menu">${rows}
-      <button class="lv free" data-act="free"><span class="no">∞</span><span><span class="nm">自由航行</span><span class="ds">不计分，随意调节漩涡和风暴</span></span><span></span></button>
+      <button class="lv free" data-act="free"><span class="no">∞</span><span><span class="nm">${FREE.name}</span><span class="ds">${tr('free.desc')}</span></span><span></span></button>
     </nav>
-    <div class="ts-hint">${MOBILE?'单指拖动画面可以转动视角':'拖动画面转动视角 · 滚轮缩放'}</div>
+    <div class="ts-hint">${tr(MOBILE?'hintM':'hint')}</div>${langPicker()}
   </div>`);
 }
 function startLevel(i){
@@ -830,19 +969,19 @@ function startLevel(i){
   LVi=i;LV=i<0?FREE:LEVELS[i];
   game.mode='brief';document.body.classList.remove('menu');
   setupLevel();
-  const tip=LV.tip||(MOBILE?'右下角狂点划桨，左下角按住转向。右上角暂停后可以调漩涡强度和风暴。':'狂按空格划桨，按住 A / D 转向。按 Esc 暂停，可以调漩涡强度和风暴。');
+  const tip=LV.tip||tr(MOBILE?'defTipM':'defTip');
   openScreen('band-screen',band(`
-    <div class="b-kicker">${LV.free?'FREE VOYAGE':'第 '+LV.no+' 关'}</div>
+    <div class="b-kicker">${LV.free?'FREE VOYAGE':tr('kicker',{no:LV.no})}</div>
     <div class="b-title gold">${LV.name}</div>
     ${LV.brief?`<p class="b-text">${LV.brief}</p>`:''}
     <div class="b-goal"><span class="dia"></span>${LV.goal}</div>
     <p class="b-tip">${tip}</p>
-    <div class="b-acts"><button class="gbtn primary" data-act="go" data-focus>${key('回车')}起航</button><button class="gbtn" data-act="menu">返回</button></div>`));
+    <div class="b-acts"><button class="gbtn primary" data-act="go" data-focus>${key(tr('enter'))}${tr('go')}</button><button class="gbtn" data-act="menu">${tr('back')}</button></div>`));
 }
 function beginPlay(){
   if(game.mode!=='brief')return;
-  closeCard();game.mode='play';ship.state='sail';game.t0=simT-13;game.lastSw=null;
-  banner(LV.name,LV.goal,'good',LV.free?'FREE VOYAGE':'第 '+LV.no+' 关');
+  closeCard();game.mode='play';ship.state='sail';game.t0=simT-(LV.ph0??13);game.lastSw=null;
+  banner(LV.name,LV.goal,'good',LV.free?'FREE VOYAGE':tr('kicker',{no:LV.no}));
   SFX.start();keepAwake();
 }
 function starsFor(){const n=aboard().length;return n>=12?3:n>=9?2:1;}
@@ -851,27 +990,29 @@ function win(){
   game.mode='won';ship.state='done';buzz([40,60,40,60,120]);SFX.win();
   const n=aboard().length;
   if(LV.free){
-    openScreen('band-screen',band(`<div class="b-kicker">FREE VOYAGE</div><div class="b-title gold">逃出生天</div>
-      <p class="b-text">你们划出了漩涡，还剩 ${n} 名船员。</p>
-      <div class="b-acts"><button class="gbtn primary" data-act="retry" data-focus>${key('回车')}再来一次</button><button class="gbtn" data-act="menu">返回标题</button></div>`));return;}
+    openScreen('band-screen',band(`<div class="b-kicker">FREE VOYAGE</div><div class="b-title gold">${tr('freeWinT')}</div>
+      <p class="b-text">${tr('freeWinX',{n})}</p>
+      <div class="b-acts"><button class="gbtn primary" data-act="retry" data-focus>${key(tr('enter'))}${tr('again')}</button><button class="gbtn" data-act="menu">${tr('toTitle')}</button></div>`));return;}
   const s=starsFor();stars[LVi]=Math.max(stars[LVi]||0,s);saveStars();
+  const rec=!bests[LVi]||game.t<bests[LVi];if(rec){bests[LVi]=game.t;saveBests();}
   const last=LVi===LEVELS.length-1;
-  openScreen('band-screen',band(`<div class="b-kicker">第 ${LV.no} 关 · ${LV.name}</div>
-    <div class="b-title gold">${last?'全 部 通 关':'通 关'}</div>
+  openScreen('band-screen',band(`<div class="b-kicker">${tr('kicker',{no:LV.no})} · ${LV.name}</div>
+    <div class="b-title gold">${tr(last?'allClear':'clear')}</div>
     <div class="b-stars">${starStr(s)}</div>
-    ${last?'<p class="b-text">你从卡律布狄斯嘴边把整条船抢了回来。荷马笔下的奥德修斯没这么幸运：他的船员一个也没能回到伊萨卡。</p>':''}
-    <div class="b-stats"><div><b>${n}</b>船上船员</div><div><b>${Math.round(game.t)}s</b>用时</div>${LV.type==='rescue'?`<div><b>${game.rescued}</b>救起</div>`:''}</div>
-    ${s<3?'<p class="b-tip">三星条件：12 名船员全部在船上。</p>':''}
-    <div class="b-acts">${last?`<button class="gbtn primary" data-act="menu" data-focus>${key('回车')}返回标题</button>`:`<button class="gbtn primary" data-act="next" data-focus>${key('回车')}下一关</button>`}<button class="gbtn" data-act="retry">重玩本关</button></div>`));
+    ${rec?`<div class="b-new">${tr('newBest')}</div>`:''}
+    ${last?`<p class="b-text">${tr('finale')}</p>`:''}
+    <div class="b-stats"><div><b>${n}</b>${tr('stAboard')}</div><div><b>${Math.round(game.t)}s</b>${tr('stTime')}</div><div><b>${Math.round(bests[LVi])}s</b>${tr('stBest')}</div>${LV.type==='rescue'?`<div><b>${game.rescued}</b>${tr('stRescued')}</div>`:''}</div>
+    ${s<3?`<p class="b-tip">${tr('star3')}</p>`:''}
+    <div class="b-acts">${last?`<button class="gbtn primary" data-act="menu" data-focus>${key(tr('enter'))}${tr('toTitle')}</button>`:`<button class="gbtn primary" data-act="next" data-focus>${key(tr('enter'))}${tr('next')}</button>`}<button class="gbtn" data-act="retry">${tr('replay')}</button></div>`));
 }
 function lose(title,text,delay=0){
   if(game.mode!=='play')return;
   game.mode='lost';
   setTimeout(SFX.lose,delay);
-  setTimeout(()=>openScreen('band-screen',band(`<div class="b-kicker">${LV.free?'FREE VOYAGE':'第 '+LV.no+' 关 · '+LV.name}</div>
+  setTimeout(()=>openScreen('band-screen',band(`<div class="b-kicker">${LV.free?'FREE VOYAGE':tr('kicker',{no:LV.no})+' · '+LV.name}</div>
     <div class="b-title red">${title}</div><p class="b-text">${text}</p>
-    <div class="b-stats"><div><b>${Math.round(game.t)}s</b>坚持</div><div><b>${aboard().length}</b>船上船员</div></div>
-    <div class="b-acts"><button class="gbtn primary" data-act="retry" data-focus>${key('回车')}再试一次</button><button class="gbtn" data-act="menu">返回标题</button></div>`)),delay);
+    <div class="b-stats"><div><b>${Math.round(game.t)}s</b>${tr('stLasted')}</div><div><b>${aboard().length}</b>${tr('stAboard')}</div></div>
+    <div class="b-acts"><button class="gbtn primary" data-act="retry" data-focus>${key(tr('enter'))}${tr('retry')}</button><button class="gbtn" data-act="menu">${tr('toTitle')}</button></div>`)),delay);
 }
 $('overlay').addEventListener('click',e=>{
   const b=e.target.closest('[data-act]');if(!b)return;
@@ -915,7 +1056,7 @@ function step(dt){
   simT+=dt;
   // Charybdis breathing (level III): b=1 swallowing, b=0 spouting
   if(LV.breath&&game.mode!=='menu'){const ph=breathPhase();M.b=ph<11?ss(0,2,ph):1-ss(11,13,ph);
-    M.depth=0.3+0.95*M.b;M.inflow=-0.6+2.2*M.b;M.g=0.45+0.85*M.b;}
+    M.depth=0.3+0.95*M.b;M.inflow=-0.6+(LV.pull||2.2)*M.b;M.g=0.45+0.85*M.b;}
   else{M.b=1;M.depth=M.inflow=M.g=1;}
   U.uTime.value=simT;U.uDepth.value=depth();U.uStorm.value=P.storm;U.uS.value=P.S;U.uG.value=70*P.S*M.g;U.uIn.value=0.8*P.S*M.inflow;
 
@@ -942,24 +1083,24 @@ function step(dt){
     r=Math.hypot(ship.x,ship.z);
     normalAt(ship.x,ship.z,simT,1.2,tmpN);
     const tilt=Math.acos(Math.min(1,tmpN.y));
-    if(Math.random()<Math.max(0,tilt-0.35)*1.1*dt){const ob=aboard();if(ob.length)throwCrew(ob[Math.floor(Math.random()*ob.length)],'{n} 被甩出船舷，快去救他');}
+    if(Math.random()<Math.max(0,tilt-0.35)*1.1*dt){const ob=aboard();if(ob.length)throwCrew(ob[Math.floor(Math.random()*ob.length)],tr('thrown'));}
     // rescue anyone in the water near the hull
     for(const s of inWater()){
       if(s.state!=='water')continue;
       if(Math.hypot(s.mesh.position.x-ship.x,s.mesh.position.z-ship.z)<3.4){
         removeSwimmer(s);boardCrew(s.crew);game.rescued++;pipSync();splash(ship.x,ship.y,ship.z,25);
-        toast(`救起了 <b>${s.crew.name}</b>`,true);buzz([30,40,30]);SFX.rescue();
+        toast(tr('rescued',{n:`<b>${s.crew.name}</b>`}),true);buzz([30,40,30]);SFX.rescue();
       }
     }
-    if(r<4.2){ship.state='swallow';ship.swallowT=0;banner('漩涡合拢了','','in');buzz([200,80,300]);SFX.gulp();}
+    if(r<4.2){ship.state='swallow';ship.swallowT=0;banner(tr('closed'),'','in');buzz([200,80,300]);SFX.gulp();}
     if(game.mode==='play'){
       if((LV.type==='escape'||LV.free)&&r>LV.escape)win();
       if(LV.type==='rescue'){
         const alive=inWater().length;
         if(game.rescued>=LV.need&&alive===0)win();
-        else if(game.rescued+alive<LV.need)lose('来不及了','落水的兄弟被卡律布狄斯吞了下去，剩下的人不够你完成这次营救。');
+        else if(game.rescued+alive<LV.need)lose(tr('lateT'),tr('lateX'));
       }
-      if(LV.minCrew&&aboard().length+inWater().length<LV.minCrew)lose('人手不够了',`船上只剩 ${aboard().length} 人，划不动这条船了。`);
+      if(LV.minCrew&&aboard().length+inWater().length<LV.minCrew)lose(tr('fewT'),tr('fewX',{n:aboard().length}));
     }
   }else if(ship.state==='swallow'){
     ship.swallowT+=dt;
@@ -971,7 +1112,7 @@ function step(dt){
       scene.add(odysseus);odysseus.position.copy(HANG).add(new THREE.Vector3(0,-0.86,0));odysseus.rotation.set(0,Math.atan2(toC.x,toC.z),0);
       odysseus.userData.arms.forEach(a=>a.rotation.x=a.userData.s*(Math.PI-0.12));
       setCam('fig');
-      lose('船没了','卡律布狄斯把整条黑船吸进了海底。奥德修斯纵身扑向崖上那棵无花果树，像蝙蝠一样倒挂在枝头，等了整整一天，直到漩涡把龙骨和桅杆吐回海面。',1800);
+      lose(tr('shipT'),tr('shipX'),1800);
     }
   }else if(ship.state==='idle'||ship.state==='done'){
     ship.psi=lerpAngle(ship.psi,Math.atan2(tz,tx),1-Math.exp(-dt*0.8));
@@ -1008,7 +1149,7 @@ function step(dt){
     }else{
       const vt=vT(sr)*s.drift,vi=Math.max(vIn(sr),0.15)*s.drift;
       m.position.x+=(-Math.sin(st)*vt-Math.cos(st)*vi)*dt;m.position.z+=(Math.cos(st)*vt-Math.sin(st)*vi)*dt;
-      if(sr<3){s.sink=(s.sink||0)+dt*5;if(!s.dead){s.dead=true;if(s.crew){s.crew.state='dead';pipSync();if(game.mode==='play'&&ship.state==='sail')toast(`<b>${s.crew.name}</b> 被漩涡吞没了`);}if(s.ring){scene.remove(s.ring);s.ring=null;}}}
+      if(sr<3){s.sink=(s.sink||0)+dt*5;if(!s.dead){s.dead=true;if(s.crew){s.crew.state='dead';pipSync();if(game.mode==='play'&&ship.state==='sail')toast(tr('drowned',{n:`<b>${s.crew.name}</b>`}));}if(s.ring){scene.remove(s.ring);s.ring=null;}}}
       m.position.y=wh+0.02+Math.sin(s.t*3+i)*0.06-(s.sink||0);
       m.rotation.set(Math.PI/2+Math.sin(s.t*2)*0.4,s.t*2,Math.sin(s.t*1.7)*0.5);
       if(s.ring){s.ring.position.set(m.position.x,m.position.y+1.7+Math.sin(s.t*4)*0.15,m.position.z);}
@@ -1054,7 +1195,7 @@ function step(dt){
     if(bolt){scene.remove(bolt);bolt.geometry.dispose();}
     bolt=new THREE.Mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts,false,'catmullrom',0.1),80,hit?0.5:0.7,5),boltMat);
     scene.add(bolt);boltT=0.2;flash=1;SFX.thunder(Math.hypot(ex-ship.x,ez-ship.z));
-    if(hit){const ob=aboard();throwCrew(ob[Math.floor(Math.random()*ob.length)],'宙斯的雷霆劈中了船，{n} 落水');splash(ship.x,ship.y,ship.z,80);}
+    if(hit){const ob=aboard();throwCrew(ob[Math.floor(Math.random()*ob.length)],tr('zeus'));splash(ship.x,ship.y,ship.z,80);}
   }
   if(bolt){boltT-=dt;bolt.visible=boltT>0&&Math.sin(boltT*90)>-0.6;if(boltT<=0){scene.remove(bolt);bolt.geometry.dispose();bolt=null;}}
   flash=Math.max(0,flash-dt*2.2);
@@ -1102,25 +1243,25 @@ function hud(){
   rowBtn.classList.toggle('active',rowing&&!ship.exhausted);rowBtn.classList.toggle('tired',ship.exhausted||ship.stamina<25);
   rowBtn.classList.toggle('exhaust',ship.exhausted);rowBtn.classList.toggle('low',low);
   comboEl.classList.toggle('on',playing&&(ship.exhausted||ship.combo>=3));comboEl.classList.toggle('ex',ship.exhausted);comboEl.classList.toggle('hot',ship.combo>=20);
-  if(ship.exhausted){$('comboN').textContent='力竭';$('comboT').textContent='喘口气';}
-  else if(ship.combo>=3){$('comboN').textContent='×'+ship.combo;$('comboT').textContent=ship.combo>=20?'全力':'连划';}
+  if(ship.exhausted){$('comboN').textContent=tr('spent');$('comboT').textContent=tr('breathe');}
+  else if(ship.combo>=3){$('comboN').textContent='×'+ship.combo;$('comboT').textContent=tr(ship.combo>=20?'full':'combo');}
   if(playing&&(low||ship.exhausted)&&!paused&&nowS()>heartT){heartT=nowS()+(ship.exhausted?0.55:0.8);SFX.heart();}
   $('left').classList.toggle('active',steerL);$('right').classList.toggle('active',steerR);
   if(LV.breath){
     const ph=breathPhase(),sw=ph>=1&&ph<12,left=sw?12-ph:(ph<1?1-ph:23-ph),total=11;
     $('breathRow').className='breath '+(sw?'in':'out');
-    $('breath').textContent=sw?'吞水':'吐水';
-    $('breathSub').textContent=`${sw?'稳住':'快冲'} · ${Math.ceil(left)}`;
+    $('breath').textContent=tr(sw?'breathIn':'breathOut');
+    $('breathSub').textContent=`${tr(sw?'steady':'rush')} · ${Math.ceil(left)}`;
     $('breathBar').style.transform=`scaleX(${Math.max(0,Math.min(1,left/total))})`;
     if(game.mode==='play'&&ship.state==='sail'&&game.lastSw!==sw){
-      if(game.lastSw!==null){banner(sw?'她在吞水':'她在吐水',sw?'匀着点，别把体力耗光':'海水往外推，狂点冲出去',sw?'in':'out');buzz(sw?[120,60,120]:60);sw?SFX.horn():SFX.whoosh();}
+      if(game.lastSw!==null){banner(tr(sw?'swIn':'swOut'),tr(sw?'swInSub':'swOutSub'),sw?'in':'out');buzz(sw?[120,60,120]:60);sw?SFX.horn():SFX.whoosh();}
       game.lastSw=sw;
     }
   }
   let g='',prog=0;
-  if(LV.type==='escape'){g=`冲到 ${LV.escape*6} 米外${LV.minCrew?`，至少 ${LV.minCrew} 人`:''}`;prog=Math.min(1,r/LV.escape);}
-  else if(LV.type==='rescue'){g=`救起落水船员 ${game.rescued} / ${LV.need}`;prog=Math.min(1,game.rescued/LV.need);}
-  else g='在漩涡里自由航行';
+  if(LV.type==='escape'){g=tr('goalEsc',{m:LV.escape*6})+(LV.minCrew?tr('goalMin',{n:LV.minCrew}):'');prog=Math.min(1,r/LV.escape);}
+  else if(LV.type==='rescue'){g=tr('goalRescue',{a:game.rescued,b:LV.need});prog=Math.min(1,game.rescued/LV.need);}
+  else g=tr('goalFree');
   $('goalTxt').textContent=g;$('goalBar').style.transform=`scaleX(${prog})`;
 }
 function drawRadar(){
@@ -1197,7 +1338,7 @@ function stroke(){
   for(const sd of [-1,1]){const px=-Math.sin(ship.psi)*sd*2.2,pz=Math.cos(ship.psi)*sd*2.2;
     for(let k=0;k<6;k++)emit(ship.x+px,ship.y+0.1,ship.z+pz,px*0.6+(Math.random()-0.5)*1.5,1.5+Math.random()*2.5,pz*0.6+(Math.random()-0.5)*1.5,0.5+Math.random()*0.4);}
   if(ship.combo%10===0)SFX.bell(ship.combo/10);
-  if(ship.stamina<=0){ship.stamina=0;ship.exhausted=true;ship.combo=0;SFX.exhaust();toast('船员力竭了，喘口气才能再划');buzz([60,40,60]);}
+  if(ship.stamina<=0){ship.stamina=0;ship.exhausted=true;ship.combo=0;SFX.exhaust();toast(tr('spentToast'));buzz([60,40,60]);}
 }
 rowBtn.addEventListener('pointerdown',e=>{e.preventDefault();stroke();});
 rowBtn.addEventListener('contextmenu',e=>e.preventDefault());
@@ -1214,7 +1355,7 @@ addEventListener('keydown',e=>{
   if(e.repeat)return;
   if(k==='Enter'&&!$('overlay').hidden){const b=$('card').querySelector('.gbtn.primary');if(b){e.preventDefault();b.click();}}
   else if(k==='KeyC'&&game.mode!=='menu'){const order=['follow','pano','cinema'];setCam(order[(order.indexOf(camMode)+1)%3]);}
-  else if(k==='KeyM'){SFX.setOn(!SFX.on);$('sound').checked=SFX.on;toast(SFX.on?'声音已打开':'已静音',true);}
+  else if(k==='KeyM'){SFX.setOn(!SFX.on);$('sound').checked=SFX.on;toast(tr(SFX.on?'soundOn':'soundOff'),true);}
   else if(k==='KeyH'){document.body.classList.toggle('ui-off');}
   else if(k==='KeyR'&&game.mode!=='menu'){startLevel(LVi);}
   else if(k==='Escape'||k==='KeyP'){if(camMode==='cinema')setCam('follow');else if(game.mode==='play')setPanel(true);}
@@ -1228,6 +1369,11 @@ addEventListener('resize',fit);addEventListener('orientationchange',()=>setTimeo
 if(window.visualViewport)visualViewport.addEventListener('resize',fit);
 document.addEventListener('visibilitychange',()=>{if(document.hidden&&game.mode==='play')setPanel(true);else if(!document.hidden&&game.mode==='play')keepAwake();});
 
+document.addEventListener('click',e=>{const b=e.target.closest('[data-lang]');if(!b||b.dataset.lang===LANG)return;
+  LANG=b.dataset.lang;try{localStorage.setItem('charybdis-lang',LANG);}catch(_){}
+  applyLang();SFX.click();
+  if(game.mode==='menu')showMenu();else if(game.mode==='brief')startLevel(LVi);});
+applyLang();
 showMenu();
 frame();
 </script>
